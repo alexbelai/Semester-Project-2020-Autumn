@@ -7,9 +7,21 @@ from time import sleep # Delay function
 
 shutdown_button = gpiozero.Button(17, hold_time=2) # Have to hold it for 2 seconds to activate
 
+# Initialize motors
+motor1 = motors.Motor(0,0) # Front Left
+motor2 = motors.Motor(0,0) # Front Right
+motor3 = motors.Motor(0,0) # Back Left
+motor4 = motors.Motor(0,0) # Back Right
+motorGroup = [motor1, motor2, motor3, motor4]
+
+# Initialize motor controller
+motorControl = motors.MotorController(motorGroup)
+
 def main():
     while True:
         shutdown_button.when_held = shutdown
+
+        # TODO: Reset pins at shutdown
 
 
 def shutdown():
