@@ -1,0 +1,6 @@
+pigpio
+gpiozero
+numpy
+scipy
+tensorflow
+deepspeech

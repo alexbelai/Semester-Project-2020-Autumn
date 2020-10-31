@@ -1,9 +1,12 @@
-## Semester-Project-2020-Autumn
+# Semester-Project-2020-Autumn
 
-# GPIO Documentation
+## Documentation
 
-GPIO Zero (High-Level Button, Sensor, LED Libraries)
+GPIO Zero (High-Level Button, Sensor, LED libraries)
 https://gpiozero.readthedocs.io/en/stable/
 
-PiGPIO (Library for accessing pins)
+PiGPIO (Low-level library for accessing pins)
 http://abyz.me.uk/rpi/pigpio/python.html
+
+DeepSpeech (Mozilla's offline speech recognition library)
+https://deepspeech.readthedocs.io/en/v0.8.2/?badge=latest

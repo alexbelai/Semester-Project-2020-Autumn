@@ -1,3 +1,9 @@
+# Motor control class
+# Parts of code based on the following blogs, tutorials, and codes:
+#
+#       Reefwing
+#       https://gist.github.com/reefwing/5176087a2edb7425d5ddb9840ab72168
+
 import pigpio
 pi = pigpio.pi() # Sets current Pi as controlled Pi
 
@@ -19,6 +25,13 @@ class MotorController():
         pi.set_mode(self.HBEnable34, pigpio.OUTPUT)
         pi.write(self.HBEnable12, 1)
         pi.write(self.HBEnable34, 1)
+
+    # TODO:
+    #def speed(self, cycle):
+    #    """
+    #    Sets duty cycle of all motors to given amount between 0-100%
+    #    """
+        
     
     def forward(self):
         """
@@ -51,6 +64,21 @@ class MotorController():
         self.backLeft.setForward()
         self.frontRight.stop()
         self.backRight.stop()
+
+    def stop(self):
+        """
+        Stops all motor activity
+        """
+        for motor in self.motors:
+            motor.stop()
+    
+    def cleanup(self):
+        """
+        Cleans pin states and stops signals going to motors
+        """
+        self.stop()
+        pi.stop()
+
 
 
 class Motor():

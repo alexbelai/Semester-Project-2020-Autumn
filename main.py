@@ -1,11 +1,18 @@
+# Main robot control file
+# Parts of code based on the following blogs, tutorials, and codes:
+#
+#       Sparkfun
+#       https://learn.sparkfun.com/tutorials/raspberry-pi-safe-reboot-and-shutdown-button/all
+
+
 import motors
 from subprocess import call # Library to send commands to Pi. Mostly used to program shutdown button.
 import gpiozero # Library for pin inputs/outputs on the board
 from time import sleep # Delay function
 
 # Pin Definitions
-
-shutdown_button = gpiozero.Button(17, hold_time=2) # Have to hold it for 2 seconds to activate
+shutdown_button = gpiozero.Button(0, hold_time=2) # Have to hold it for 2 seconds to activate
+speech_button = gpiozero.Button(0)
 
 # Initialize motors
 motor1 = motors.Motor(0,0) # Front Left
