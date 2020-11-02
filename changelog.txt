@@ -3,4 +3,8 @@
 	Shutdown Button
 	Add GPIO Features (Currently using PiGPIO but might change to GPIOZero)
 	Motor Class Setup
+
+2020.11.01:
+	Add speech model
+	Start looking into PyAudio implementation
 	
