@@ -1,8 +1,4 @@
 # Main robot control file
-# Parts of code based on the following blogs, tutorials, and codes:
-#
-#       Sparkfun
-#       https://learn.sparkfun.com/tutorials/raspberry-pi-safe-reboot-and-shutdown-button/all
 
 from pathlib import Path
 import speech
@@ -39,9 +35,8 @@ def main():
 
 
 def shutdown():
-    """
-    Shut down system by passing a commmand to commmand line.
-    """
+    """Shut down system by passing a commmand to commmand line."""
+
     call(["sudo", "shutdown", "-h", "now"]) # "Sudo" for admin rights, "-h" for halting after shutting down processes
 
 if __name__ == "__main__":
