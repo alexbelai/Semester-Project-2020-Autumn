@@ -7,7 +7,7 @@
 import pigpio
 pi = pigpio.pi() # Sets current Pi as controlled Pi
 
-class MotorController():
+class MotorController:
 
     def __init__ (self, motors):
 
@@ -81,7 +81,7 @@ class MotorController():
 
 
 
-class Motor():
+class Motor:
     
     def __init__ (self, forwardpin, backwardpin):
         

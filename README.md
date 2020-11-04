@@ -13,3 +13,4 @@ http://people.csail.mit.edu/hubert/pyaudio/docs/
 
 DeepSpeech (Mozilla's offline speech recognition library)
 https://deepspeech.readthedocs.io/en/v0.8.2/?badge=latest
+https://github.com/mozilla/DeepSpeech-examples

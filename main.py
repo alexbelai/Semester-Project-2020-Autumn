@@ -5,6 +5,7 @@
 #       https://learn.sparkfun.com/tutorials/raspberry-pi-safe-reboot-and-shutdown-button/all
 
 from pathlib import Path
+import speech
 import deepspeech
 import motors
 from subprocess import call # Library to send commands to Pi. Mostly used to program shutdown button.
@@ -27,7 +28,7 @@ motorControl = motors.MotorController(motorGroup)
 
 # Create deepspeech model
 modelPath = str(Path().absolute()/'model'/'deepspeech-0.8.2-models.tflite') # TODO: Transfer to normal pbmm model compaible with Pi
-speech = deepspeech.Model(modelPath)
+ds = deepspeech.Model(modelPath)
 
 
 def main():
