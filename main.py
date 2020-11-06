@@ -13,11 +13,9 @@ shutdown_button = gpiozero.Button(0, hold_time=2) # Have to hold it for 2 second
 speech_button = gpiozero.Button(0)
 
 # Initialize motors
-motor1 = motors.Motor(0,0) # Front Left
-motor2 = motors.Motor(0,0) # Front Right
-motor3 = motors.Motor(0,0) # Back Left
-motor4 = motors.Motor(0,0) # Back Right
-motorGroup = [motor1, motor2, motor3, motor4]
+motor1 = motors.Motor(0,0) # Left
+motor2 = motors.Motor(0,0) # Right
+motorGroup = [motor1, motor2]
 
 # Initialize motor controller
 motorControl = motors.MotorController(motorGroup)

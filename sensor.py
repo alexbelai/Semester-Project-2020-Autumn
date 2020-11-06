@@ -1,10 +1,7 @@
-import RPi.GPIO as GPIO
+import pigpio 
 import time
 
-GPIO.setwarnings(False )
-GPIO.setmode(GPIO.BOARD)
-
-#TODO implement all 3 sensor readings as an object
+pi = pigpio.pi()
 
 class UltrasonicSensor():
     def __init__(self, echo_pin, trig_pin):
@@ -14,26 +11,24 @@ class UltrasonicSensor():
 
             # Set Pins to Inputs or Outputs
 
-            GPIO.setup(trig_pin, GPIO.OUT)
-            GPIO.setup(echo_pin, GPIO.IN)
+            pi.set_mode(self.trig_pin, pigpio.OUTPUT)
+            pi.set_mode(self.echo_pin, pigpio.INPUT)
 
-            GPIO.output(trig_pin, 0)
-            time.sleep(0.2)
-    
+            pi.write(self.trig_pin, 0)
+    #changed
     def read_Distance(self):
-        GPIO.output(self.trig_pin, 1)
+        pi.write(self.trig_pin, 1)
         time.sleep(0.00001)
-        GPIO.output(self.trig_pin, 0)
+        pi.write(self.trig_pin, 0)
 
-        while GPIO.input(self.echo_pin) == 0:
+        while pi.read(self.echo_pin) == 0:
             pass
         pulse_start = time.time()
 
-        while GPIO.input(self.echo_pin) == 1:
+        while pi.read(self.echo_pin) == 1:
             pass
         pulse_stop = time.time()
 
         distance = round(((pulse_stop - pulse_start) * 17000), 2)  # distance in cm
-        time.sleep(0.2)
-
         return distance
+    

@@ -13,10 +13,8 @@ class MotorController:
 
         # Extract motors from list
         self.motors = motors
-        self.frontLeft = self.motors[0]
-        self.frontRight = self.motors[1]
-        self.backLeft = self.motors[2]
-        self.backRight = self.motors[3]
+        self.Left = self.motors[0]
+        self.Right = self.motors[1]
 
         # Set up HBridge pins for Motors
         self.HBEnable12 = 0
@@ -45,17 +43,13 @@ class MotorController:
     
     def right(self):
         """Turns right"""
-        self.frontLeft.stop()
-        self.backLeft.stop()
-        self.frontRight.setForward()
-        self.backRight.setForward()
+        self.Left.setBackward()
+        self.Right.setForward()
 
     def left(self):
         """Turns right"""
-        self.frontLeft.setForward()
-        self.backLeft.setForward()
-        self.frontRight.stop()
-        self.backRight.stop()
+        self.Left.setForward()
+        self.Right.setBackward()
 
     def stop(self):
         """Stops all motor activity"""
