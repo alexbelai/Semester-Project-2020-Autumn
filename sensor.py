@@ -15,8 +15,10 @@ class UltrasonicSensor():
             pi.set_mode(self.echo_pin, pigpio.INPUT)
 
             pi.write(self.trig_pin, 0)
-    #changed
+    
     def read_Distance(self):
+        """Reads distance and returns it in centimeteres"""
+
         pi.write(self.trig_pin, 1)
         time.sleep(0.00001)
         pi.write(self.trig_pin, 0)

@@ -7,6 +7,7 @@ import motors
 from subprocess import call # Library to send commands to Pi. Mostly used to program shutdown button.
 import gpiozero # Library for pin inputs/outputs on the board
 from time import sleep # Delay function
+import sensor
 
 # Pin Definitions
 shutdown_button = gpiozero.Button(0, hold_time=2) # Have to hold it for 2 seconds to activate
@@ -16,6 +17,9 @@ speech_button = gpiozero.Button(0)
 motor1 = motors.Motor(0,0) # Left
 motor2 = motors.Motor(0,0) # Right
 motorGroup = [motor1, motor2]
+
+
+Sensor = sensor.UltrasonicSensor(0,1)
 
 # Initialize motor controller
 motorControl = motors.MotorController(motorGroup)
