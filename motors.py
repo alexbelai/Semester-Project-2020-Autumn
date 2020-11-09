@@ -69,11 +69,11 @@ class Stepper:
         # Initialize control pin behavior
         self.controlpins = [in1,in2,in3,in4]
         for pin in self.controlpins:
-            pi.set_mode(self.controlpins[pin], pigpio.OUTPUT)
-            pi.write(self.controlpins[pin], 0)
+            pi.set_mode(pin, pigpio.OUTPUT)
+            pi.write(pin, 0)
 
         # Halfstep sequence for stepper motor movement, defines which pins need to be on at which step
-        self.sequence = [
+        self.halfsequence = [
             [1,0,0,0],
             [1,1,0,0],
             [0,1,0,0],
@@ -83,7 +83,14 @@ class Stepper:
             [0,0,0,1],
             [1,0,0,1]
         ]
-        self.loopsize = len(self.sequence) # Defines the amount of steps a loop takes
+
+        self.fullsequence = [
+            [1,0,0,0],
+            [0,1,0,0],
+            [0,0,1,0],
+            [0,0,0,1],
+        ]
+        self.loopsize = len(self.fullsequence) # Defines the amount of steps a loop takes
     
     def clockwise(self, turns):
         """
@@ -99,7 +106,7 @@ class Stepper:
         for i in range(turns):
             for step in range(self.loopsize): # For each step in the sequence
                 for pin in range(4): # For each control pin
-                    pi.write(self.controlpins[pin],self.sequence[step][pin])
+                    pi.write(self.controlpins[pin], self.fullsequence[step][pin])
                 time.sleep(0.01) # 10 ms delay
 
 class Motor:

@@ -12,3 +12,10 @@
 	Create GitHub Projects page
 	Finish Pyaudio Implementation (Working stream to play microphone data)
 	
+2020.11.08:
+	Add stepper motor code
+	Finish VAD Implementation (Voice Audio Detection for Speech module)
+	Change PyAudio to run on a queue-based system
+
+2020.11.09:
+	Debug Stepper
