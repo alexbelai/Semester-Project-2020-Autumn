@@ -7,4 +7,8 @@
 2020.11.01:
 	Add speech model
 	Start looking into PyAudio implementation
+
+2020.11.04:
+	Create GitHub Projects page
+	Finish Pyaudio Implementation (Working stream to play microphone data)
 	

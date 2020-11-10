@@ -1,10 +1,7 @@
 # Main robot control file
-# Parts of code based on the following blogs, tutorials, and codes:
-#
-#       Sparkfun
-#       https://learn.sparkfun.com/tutorials/raspberry-pi-safe-reboot-and-shutdown-button/all
 
 from pathlib import Path
+import speech
 import deepspeech
 import motors
 from subprocess import call # Library to send commands to Pi. Mostly used to program shutdown button.
@@ -27,7 +24,7 @@ motorControl = motors.MotorController(motorGroup)
 
 # Create deepspeech model
 modelPath = str(Path().absolute()/'model'/'deepspeech-0.8.2-models.tflite') # TODO: Transfer to normal pbmm model compaible with Pi
-speech = deepspeech.Model(modelPath)
+ds = deepspeech.Model(modelPath)
 
 
 def main():
@@ -38,9 +35,8 @@ def main():
 
 
 def shutdown():
-    """
-    Shut down system by passing a commmand to commmand line.
-    """
+    """Shut down system by passing a commmand to commmand line."""
+
     call(["sudo", "shutdown", "-h", "now"]) # "Sudo" for admin rights, "-h" for halting after shutting down processes
 
 if __name__ == "__main__":
