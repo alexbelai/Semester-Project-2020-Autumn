@@ -22,7 +22,8 @@ class Audio:
 
         self.buffer = queue.Queue() # Initiate queue to put audio segments in
         self.block_size = int(INPUTRATE / float(BLOCKS_PER_SECOND)) # Determine size of audio blocks
-        self.frame_duration_ms = 1000 * int(self.block_size / INPUTRATE) # Duration of one block of audio in ms
+        self.frame_duration_ms = 1000 * self.block_size // INPUTRATE # Duration of one block of audio in ms
+        print(str(self.block_size) + " and " + str(self.frame_duration_ms)) 
 
         # Initiate PyAudio
         self.pa = pyaudio.PyAudio() 
