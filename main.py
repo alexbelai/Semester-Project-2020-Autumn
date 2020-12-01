@@ -1,5 +1,4 @@
 # Main robot control file
-
 import speech
 import deepspeech                           # Machine learning model library
 import numpy as np                          # Numpy for audio buffer data arrays
@@ -29,13 +28,14 @@ from time import perf_counter as timer   # Timer to time model load speed
 def main():
     # while True:
     # TODO: Reset pins at shutdown
-    init_speech_model("deepspeech-0.8.2-models.tflite")
+    init_speech_model("deepspeech-0.8.2-models.tflite", aggressiveness=1)
+    print("Program closing")
 
 def init_speech_model(modelname, scorername = None, use_scorer = False, aggressiveness = 0):
     """
     Initialize Audio Stream, Voice Activity Detection and Deepspeech Decoding Algorithm
     """
-    # Initialize model
+    # Initialize DeepSpeech model
     modelPath = str(os.path.join(os.getcwd(), "model", modelname))
     print("Trying to open model at {}".format(modelPath))
     modelLoadStart = timer()
@@ -57,22 +57,38 @@ def init_speech_model(modelname, scorername = None, use_scorer = False, aggressi
     print("Listening to input (ctrl-C to exit)")
     frames = vad_audio.vad_collector()
 
-    # Init loading bar and stream
+    # Init loading bar
     spinner = Halo(spinner = 'line', color = 'magenta')
-    modelStream = ds.createStream()
-    
-    for frame in frames:
 
-        # If encountering a non-empty frame, feed it to model and start loading
-        if frame is not None:
-            spinner.start()
-            modelStream.feedAudioContent(np.frombuffer(frame, np.int16))
+    # Start stream and transcribing
+    try:
+        modelStream = ds.createStream()
 
-        # If encountering an empty frame, stop feeding to model and print
-        else:
-            spinner.stop()
-            text = modelStream.finishStream()
-            print("Recognized: {}".format(text))
+        for frame in frames:
+
+            # If encountering a non-empty frame, feed it to model and start loading
+            if frame is not None:
+                spinner.start()
+                modelStream.feedAudioContent(np.frombuffer(frame, np.int16))
+
+            # If encountering an empty frame, stop feeding to model and print
+            else:
+                spinner.stop()
+                text = modelStream.finishStream()
+                print("Recognized: {}".format(text))
+
+                # If "stop" encountered, stop stream
+                if "stop" in text:
+                    vad_audio.close()
+                    return 1
+
+                # Restart Stream
+                modelStream = ds.createStream()
+    except KeyboardInterrupt:
+        print("Stopping recording...")
+    finally:
+        vad_audio.close()
+
 
 #def shutdown():
 #    """Shut down system by passing a commmand to commmand line."""

@@ -5,6 +5,13 @@ import time
 import webrtcvad
 import queue
 import collections
+from threading import Thread
+import os
+from time import perf_counter as timer      # Timer to time model load speed
+from halo import Halo                       # Animated spinners for loading
+from pvporcupine import Porcupine           # Porcupine
+
+
 
 # Global Variables
 FORMAT = pyaudio.paInt16 # 16-bit format required by WebRTCVad
@@ -23,7 +30,6 @@ class Audio:
         self.buffer = queue.Queue() # Initiate queue to put audio segments in
         self.block_size = int(INPUTRATE / float(BLOCKS_PER_SECOND)) # Determine size of audio blocks
         self.frame_duration_ms = 1000 * self.block_size // INPUTRATE # Duration of one block of audio in ms
-        print(str(self.block_size) + " and " + str(self.frame_duration_ms)) 
 
         # Initiate PyAudio
         self.pa = pyaudio.PyAudio() 
@@ -114,3 +120,103 @@ class VoiceActivityDetector(Audio):
                     # Stop yielding audio
                     yield None
                     ring_buffer.clear()
+
+class Recognizer(Thread):
+    """
+    Class for wake word detection using Porcupine, PyAudio, WebRTCVad and DeepSpeech library. 
+    It creates an input audio stream, which it monitors on a separate thread for a wake word.
+    Whenever the wake word is heard, it starts transcribing audio until word "stop" is mentioned.
+    """
+    def __init__(self,
+        dsname,
+        library_path,
+        model_path,
+        keyword_paths,
+        sensitivities,
+        dsscorername = None,
+        use_scorer = False,
+        aggressiveness = 0,):
+
+        # Multithreading
+        super(Recognizer, self).__init__()
+
+        # Init variables
+        self.dsname = dsname
+        self.dsscorername = dsscorername
+        self.use_scorer = use_scorer
+        self.aggressiveness = aggressiveness
+        self.library_path = library_path
+        self.model_path = model_path
+        self.keyword_paths = keyword_paths
+        self.sensitivities = sensitivities
+
+        # Initialize DeepSpeech model
+        modelPath = str(os.path.join(os.getcwd(), "model", self.dsname))
+        print("Trying to open model at {}".format(modelPath))
+        modelLoadStart = timer()
+        self.ds = deepspeech.Model(modelPath)
+        modelLoadEnd = timer()
+        print("Successfully loaded model in {:.3}s".format(modelLoadEnd - modelLoadStart))
+
+        # Initialize scorer
+        if self.use_scorer:
+            scorerPath = str(os.path.join(os.getcwd(), "model", self.dsscorername))
+            if os.path.exists(scorerPath):
+                scorerLoadStart = timer()
+                self.ds.enableExternalScorer(modelPath)
+                scorerLoadEnd = timer()
+                print("Successfully loaded scorer in {:.3}s".format(scorerLoadEnd - scorerLoadStart))
+    
+    def transcribe(self):
+        """
+        Initialize voice activity detection and feed it to DeepSpeech model to transcribe.
+        """
+
+        # Initialize voice activity detector and audio stream with agressiveness between 0 and 3
+        vad_audio = VoiceActivityDetector(self.aggressiveness)
+        print("Listening to input (ctrl-C to exit)")
+        frames = vad_audio.vad_collector()
+
+        try:
+            # Init loading bar and stream
+            spinner = Halo(spinner = 'line', color = 'magenta')
+            modelStream = self.ds.createStream()
+            
+            for frame in frames:
+
+                # If encountering a non-empty frame, feed it to model and start loading
+                if frame is not None:
+                    spinner.start()
+                    modelStream.feedAudioContent(np.frombuffer(frame, np.int16))
+
+                # If encountering an empty frame, stop feeding to model and print
+                else:
+                    spinner.stop()
+                    text = modelStream.finishStream()
+                    print("Recognized: {}".format(text))
+
+                    # If "stop" encountered, stop stream
+                    if "stop" in text:
+                        vad_audio.close()
+                        return 1
+
+                    # Restart Stream
+                    modelStream = self.ds.createStream()
+
+        # If interrupted with Ctrl+C, stop recording and close stream
+        except KeyboardInterrupt:
+            print("Stopping recording")
+        finally:
+            vad_audio.close()
+
+    def run(self):
+        """
+        Creates
+        """
+        
+        porcupine = Porcupine(
+            library_path = self.library_path,
+            model_path = self.model_path,
+            keyword_paths = self.keyword_paths,
+            sensitivities = self.sensitivities)
+            
