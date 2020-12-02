@@ -28,7 +28,9 @@ from time import perf_counter as timer   # Timer to time model load speed
 def main():
     # while True:
     # TODO: Reset pins at shutdown
-    init_speech_model("deepspeech-0.8.2-models.tflite", aggressiveness=1)
+    # init_speech_model("deepspeech-0.8.2-models.tflite", aggressiveness=1)
+    recognizer = speech.Recognizer("deepspeech-0.8.2-models.tflite")
+    recognizer.run()
     print("Program closing")
 
 def init_speech_model(modelname, scorername = None, use_scorer = False, aggressiveness = 0):
