@@ -9,7 +9,8 @@ from threading import Thread
 import os
 from time import perf_counter as timer      # Timer to time model load speed
 from halo import Halo                       # Animated spinners for loading
-from pvporcupine import Porcupine           # Porcupine
+import pvporcupine                          # Porcupine
+import struct                               # Used to unpack PyAudio data from C to Python
 
 
 
@@ -19,9 +20,8 @@ INPUTRATE = 16000 # Sampling rate = 16kHZ
 CHANNELS = 1 # Mono audio required by WebRTCVad
 BLOCKS_PER_SECOND = 50 # 50 blocks of audio generated per second
 
-# TODO: Create start stream functionality in "Audio" class
 # TODO: Implement Resample
-# TODO: Add print statements to initialization to log what's happening
+# TODO: Option to pick input device by index
 
 class Audio:
     """Class holding PyAudio objects"""
@@ -126,16 +126,28 @@ class Recognizer(Thread):
     Class for wake word detection using Porcupine, PyAudio, WebRTCVad and DeepSpeech library. 
     It creates an input audio stream, which it monitors on a separate thread for a wake word.
     Whenever the wake word is heard, it starts transcribing audio until word "stop" is mentioned.
+
+    :param dsname: Name of deepspeech model.
+    :param dsscorername: Name of deepspeech scorer.
+    :param use_scorer: Whether to use scorer or not. Default: False
+    :param aggressiveness: Aggressiveness of Voice Activity Detection from 0-3. Default: 0
+    :param library_path: Path to porcupine library (lib/raspberry-pi/arm11/libpv_porcupine.so)
+    :param model_path: Path to porcupine model (lib/common/porcupine_params.pv)
+    :param keywords: Availabe keywords: Americano, Blueberry, Bumblebee, Grapefruit, Grasshopper, Picovoice, Porcupine, Terminator, Trick-Or-Treat
+    :param keyword_paths: Inferred from keywords. (resources/keyword_files/...)
+    :param sensitivities: Sensitivity to wake word detection between 0 and 1. Default: 0.5
     """
     def __init__(self,
-        dsname,
-        library_path,
-        model_path,
-        keyword_paths,
-        sensitivities,
-        dsscorername = None,
-        use_scorer = False,
-        aggressiveness = 0,):
+            dsname,                                 
+            dsscorername = None,
+            use_scorer = False,
+            aggressiveness = 0,
+            library_path = pvporcupine.LIBRARY_PATH,
+            model_path = pvporcupine.MODEL_PATH,
+            keywords = ["blueberry"],
+            keyword_paths = None,
+            sensitivities = None
+            ):
 
         # Multithreading
         super(Recognizer, self).__init__()
@@ -148,7 +160,14 @@ class Recognizer(Thread):
         self.library_path = library_path
         self.model_path = model_path
         self.keyword_paths = keyword_paths
-        self.sensitivities = sensitivities
+
+        if keyword_paths is None:
+            self.keyword_paths = [pvporcupine.KEYWORD_PATHS[x] for x in keywords] # Get keyword path from given keywords
+        else:
+            self.keyword_paths = str(os.path.join(os.getcwd(), keyword_paths))
+        
+        if sensitivities is None:
+            self.sensitivities = [0.5] * len(self.keyword_paths) # Create a list of "0.5" values the length of amount of keywords
 
         # Initialize DeepSpeech model
         modelPath = str(os.path.join(os.getcwd(), "model", self.dsname))
@@ -158,7 +177,7 @@ class Recognizer(Thread):
         modelLoadEnd = timer()
         print("Successfully loaded model in {:.3}s".format(modelLoadEnd - modelLoadStart))
 
-        # Initialize scorer
+        # Initialize DeepSpeech scorer
         if self.use_scorer:
             scorerPath = str(os.path.join(os.getcwd(), "model", self.dsscorername))
             if os.path.exists(scorerPath):
@@ -194,14 +213,14 @@ class Recognizer(Thread):
                     spinner.stop()
                     text = modelStream.finishStream()
                     print("Recognized: {}".format(text))
-
+                    return 1
                     # If "stop" encountered, stop stream
-                    if "stop" in text:
-                        vad_audio.close()
-                        return 1
+                    # if "stop" in text:
+                    #    vad_audio.close()
+                    #    return 1
 
                     # Restart Stream
-                    modelStream = self.ds.createStream()
+                    # modelStream = self.ds.createStream()
 
         # If interrupted with Ctrl+C, stop recording and close stream
         except KeyboardInterrupt:
@@ -214,9 +233,57 @@ class Recognizer(Thread):
         Creates
         """
         
-        porcupine = Porcupine(
-            library_path = self.library_path,
-            model_path = self.model_path,
-            keyword_paths = self.keyword_paths,
-            sensitivities = self.sensitivities)
+        # Extract keywords from keyword_paths
+        keywords = list()
+        for keyword in self.keyword_paths:
+            words = os.path.basename(keyword).replace(".ppn", "").split("_") # Takes the file, deletes .ppn and splits it into a list of strings
+            keywords.append(words[0])
+        
+        # Initialize libraries
+        porcupine = None
+        pa = None
+        stream = None
+
+        try:
+            porcupine = pvporcupine.create(
+                library_path = self.library_path,
+                model_path = self.model_path,
+                keyword_paths = self.keyword_paths,
+                sensitivities = self.sensitivities)
+            
+            pa = pyaudio.PyAudio()
+
+            stream = pa.open(
+                format = FORMAT,
+                channels = CHANNELS,
+                rate = porcupine.sample_rate,
+                input = True, # Specify as input
+                frames_per_buffer= porcupine.frame_length)
+            
+            print("Listening for keyword with sensitivities:")
+            for keyword, sensitivity in zip(keywords, self.sensitivities):
+                print("    {} {}".format(keyword, sensitivity))
+
+            while True:
+                pcm = stream.read(porcupine.frame_length)
+                unpacked = struct.unpack_from("h" * porcupine.frame_length, pcm) # Unpack "frame length" amount of "short" data types in C ("h" string) from buffer. Read more on struct Format Strings to understand.
+
+                result = porcupine.process(unpacked)
+                if result >= 0:
+                    print("Detected keyword {}".format(keywords[result]))
+                    self.transcribe()
+                    print("Done")
+
+        except KeyboardInterrupt:
+            print("Stopping wake word detection...")
+
+        finally:
+            if porcupine is not None:
+                porcupine.delete()
+
+            if stream is not None:
+                stream.close()
+            
+            if pa is not None:
+                pa.terminate()
             
