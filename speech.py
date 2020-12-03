@@ -160,6 +160,7 @@ class Recognizer(Thread):
         self.library_path = library_path
         self.model_path = model_path
         self.keyword_paths = keyword_paths
+        self.running = True
 
         if keyword_paths is None:
             self.keyword_paths = [pvporcupine.KEYWORD_PATHS[x] for x in keywords] # Get keyword path from given keywords
@@ -186,6 +187,13 @@ class Recognizer(Thread):
                 scorerLoadEnd = timer()
                 print("Successfully loaded scorer in {:.3}s".format(scorerLoadEnd - scorerLoadStart))
     
+    def terminate(self):
+        """
+        Terminates the while loop for wake word detection, thus being able to close the thread.
+        """
+        self.running = False
+        return
+
     def transcribe(self):
         """
         Initialize voice activity detection and feed it to DeepSpeech model to transcribe.
@@ -230,7 +238,8 @@ class Recognizer(Thread):
 
     def run(self):
         """
-        Creates
+        Creates an audio stream with PyAudio which constantly listens for the keywords specified.
+        If a keyword is detected, self.transcribe() is called to start transcribing commands.
         """
         
         # Extract keywords from keyword_paths
@@ -245,14 +254,15 @@ class Recognizer(Thread):
         stream = None
 
         try:
+            # Initialize wake word detection (Porcupine)
             porcupine = pvporcupine.create(
                 library_path = self.library_path,
                 model_path = self.model_path,
                 keyword_paths = self.keyword_paths,
                 sensitivities = self.sensitivities)
             
+            # Initialize PyAudio and an audio stream
             pa = pyaudio.PyAudio()
-
             stream = pa.open(
                 format = FORMAT,
                 channels = CHANNELS,
@@ -260,17 +270,26 @@ class Recognizer(Thread):
                 input = True, # Specify as input
                 frames_per_buffer= porcupine.frame_length)
             
+            # Print readyness for listening
             print("Listening for keyword with sensitivities:")
             for keyword, sensitivity in zip(keywords, self.sensitivities):
                 print("    {} {}".format(keyword, sensitivity))
 
-            while True:
+            # Infinite loop unless self.terminate() called in main thread
+            while self.running:
+
+                # Reads porcupine's required frame length of data from audio stream
                 pcm = stream.read(porcupine.frame_length)
+
+                # Unpacks the data from a C data type (short) to a Python int
                 unpacked = struct.unpack_from("h" * porcupine.frame_length, pcm) # Unpack "frame length" amount of "short" data types in C ("h" string) from buffer. Read more on struct Format Strings to understand.
 
+                # Process data through Porcupine. Returns the index of the keyword from given array if it found one, -1 otherwise
                 result = porcupine.process(unpacked)
                 if result >= 0:
                     print("Detected keyword {}".format(keywords[result]))
+
+                    # Calls self.transcribe() to start listening for commands. Can be exchanged for any other function to call on keyword detection.
                     self.transcribe()
                     print("Done")
 
