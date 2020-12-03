@@ -138,7 +138,8 @@ class Recognizer(Thread):
     :param sensitivities: Sensitivity to wake word detection between 0 and 1. Default: 0.5
     """
     def __init__(self,
-            dsname,                                 
+            dsname,
+            callback,                                 
             dsscorername = None,
             use_scorer = False,
             aggressiveness = 0,
@@ -161,6 +162,7 @@ class Recognizer(Thread):
         self.model_path = model_path
         self.keyword_paths = keyword_paths
         self.running = True
+        self.callback = callback
 
         if keyword_paths is None:
             self.keyword_paths = [pvporcupine.KEYWORD_PATHS[x] for x in keywords] # Get keyword path from given keywords
@@ -216,11 +218,11 @@ class Recognizer(Thread):
                     spinner.start()
                     modelStream.feedAudioContent(np.frombuffer(frame, np.int16))
 
-                # If encountering an empty frame, stop feeding to model and print
+                # If encountering an empty frame, stop feeding to model and send data to callback function specified in main
                 else:
                     spinner.stop()
                     text = modelStream.finishStream()
-                    print("Recognized: {}".format(text))
+                    self.callback(text)
                     return 1
                     # If "stop" encountered, stop stream
                     # if "stop" in text:

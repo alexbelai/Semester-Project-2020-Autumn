@@ -33,7 +33,7 @@ def main():
     # init_speech_model("deepspeech-0.8.2-models.tflite", aggressiveness=1)
 
     # Initialize Thread 1 as speech recognition running in background. Note: Thread is a subclass of Recognizer
-    thread1 = speech.Recognizer("deepspeech-0.8.2-models.tflite")
+    thread1 = speech.Recognizer("deepspeech-0.8.2-models.tflite", print_result)
 
     # Initialize Thread 2 as whatever else function or class
     stop_thread = False
@@ -58,6 +58,13 @@ def main():
             break
     print(thread1.is_alive(), thread2.is_alive()) # Debugging purposes to check if threads killed correctly
     print("Exiting program")
+
+def print_result(result):
+    """
+    This is the function which can extract data from the speech engine. It will be called every time something is recognized by the robot.
+    """
+    print ("Recognized: {}".format(result))
+    return
 
 def test_thread(stop):
     """
