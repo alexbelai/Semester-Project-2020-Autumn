@@ -10,6 +10,8 @@ from time import sleep                      # Delay function
 import os                                   # Get path function
 from halo import Halo                       # Animated spinners for loading
 from time import perf_counter as timer   # Timer to time model load speed
+from threading import Thread
+
 
 # TODO: Transfer to normal pbmm deepspeech model compatible with Pi
 # TODO: Implement Spinner to recognizing audio
@@ -29,9 +31,44 @@ def main():
     # while True:
     # TODO: Reset pins at shutdown
     # init_speech_model("deepspeech-0.8.2-models.tflite", aggressiveness=1)
-    recognizer = speech.Recognizer("deepspeech-0.8.2-models.tflite")
-    recognizer.run()
-    print("Program closing")
+
+    # Initialize Thread 1 as speech recognition running in background. Note: Thread is a subclass of Recognizer
+    thread1 = speech.Recognizer("deepspeech-0.8.2-models.tflite")
+
+    # Initialize Thread 2 as whatever else function or class
+    stop_thread = False
+    thread2 = Thread(target = test_thread, args = (lambda : stop_thread, )) # stop_thread is turned into a function that is checked each time
+    
+    # Start both threads
+    thread1.start()
+    thread2.start()
+    print("Successfully started threads")
+
+    # Main Loop, exiting on Ctrl-C
+    while True:
+        try:
+            print("Running...")
+            sleep(1)
+        except KeyboardInterrupt:
+            print("Closing threads...")
+            stop_thread = True # Stops infinite loop in function thread 2
+            thread1.terminate() # Stops infinite loop in class thread 1
+            thread1.join() # Joins closed thread1 with main loop
+            thread2.join() # Joins closed thread2 with main loop
+            break
+    print(thread1.is_alive(), thread2.is_alive()) # Debugging purposes to check if threads killed correctly
+    print("Exiting program")
+
+def test_thread(stop):
+    """
+    Function to test thread usage, infinite while loop
+    """
+    while True:
+        print("holy shit this works")
+        sleep(1)
+        if stop():
+            break
+
 
 def init_speech_model(modelname, scorername = None, use_scorer = False, aggressiveness = 0):
     """
@@ -96,6 +133,5 @@ def init_speech_model(modelname, scorername = None, use_scorer = False, aggressi
 #    """Shut down system by passing a commmand to commmand line."""
 #
 #    call(["sudo", "shutdown", "-h", "now"]) # "Sudo" for admin rights, "-h" for halting after shutting down processes
-
 if __name__ == "__main__":
     main()
