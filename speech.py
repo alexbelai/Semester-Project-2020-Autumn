@@ -9,7 +9,8 @@ from threading import Thread
 import os
 from time import perf_counter as timer      # Timer to time model load speed
 from halo import Halo                       # Animated spinners for loading
-import pvporcupine                          # Porcupine
+import pvporcupine                          # Wake word detection
+import pvrhino                              # Speech to intent
 import struct                               # Used to unpack PyAudio data from C to Python
 
 
@@ -18,7 +19,7 @@ import struct                               # Used to unpack PyAudio data from C
 FORMAT = pyaudio.paInt16 # 16-bit format required by WebRTCVad
 INPUTRATE = 16000 # Sampling rate = 16kHZ
 CHANNELS = 1 # Mono audio required by WebRTCVad
-BLOCKS_PER_SECOND = 50 # 50 blocks of audio generated per second
+BLOCKS_PER_SECOND = 50 # 50 required for DeepSpeech so it has 320 long frames
 
 # TODO: Implement Resample
 # TODO: Option to pick input device by index
@@ -29,6 +30,7 @@ class Audio:
 
         self.buffer = queue.Queue() # Initiate queue to put audio segments in
         self.block_size = int(INPUTRATE / float(BLOCKS_PER_SECOND)) # Determine size of audio blocks
+        print(self.block_size)
         self.frame_duration_ms = 1000 * self.block_size // INPUTRATE # Duration of one block of audio in ms
 
         # Initiate PyAudio
@@ -126,48 +128,70 @@ class Recognizer(Thread):
     Class for wake word detection using Porcupine, PyAudio, WebRTCVad and DeepSpeech library. 
     It creates an input audio stream, which it monitors on a separate thread for a wake word.
     Whenever the wake word is heard, it starts transcribing audio until word "stop" is mentioned.
-
+    
+    :param ds_callback: Callback function to transfer DeepSpeech results of transcription to.
+    :param rhino_callback: Callback function to transfer Rhino results to. Is given an object with "is_understood", "intent" and "slots" getters.
     :param dsname: Name of deepspeech model.
     :param dsscorername: Name of deepspeech scorer.
     :param use_scorer: Whether to use scorer or not. Default: False
     :param aggressiveness: Aggressiveness of Voice Activity Detection from 0-3. Default: 0
-    :param library_path: Path to porcupine library (lib/raspberry-pi/arm11/libpv_porcupine.so)
-    :param model_path: Path to porcupine model (lib/common/porcupine_params.pv)
-    :param keywords: Availabe keywords: Americano, Blueberry, Bumblebee, Grapefruit, Grasshopper, Picovoice, Porcupine, Terminator, Trick-Or-Treat
-    :param keyword_paths: Inferred from keywords. (resources/keyword_files/...)
-    :param sensitivities: Sensitivity to wake word detection between 0 and 1. Default: 0.5
+    :param porc_library_path: Path to porcupine library (lib/raspberry-pi/arm11/libpv_porcupine.so)
+    :param porc_model_path: Path to porcupine model (lib/common/porcupine_params.pv)
+    :param porc_keywords: Availabe keywords: Americano, Blueberry, Bumblebee, Grapefruit, Grasshopper, Picovoice, Porcupine, Terminator, Trick-Or-Treat
+    :param porc_keyword_paths: Inferred from keywords. (resources/keyword_files/...)
+    :param porc_sensitivities: Sensitivity to wake word detection between 0 and 1. Default: 0.5
+    :param rhino_library_path: Path to rhino library (lib/raspberry-pi/arm11/libpv_rhino.so)
+    :param rhino_model_path: Path to rhino model (lib/common/rhino_params.pv)
+    :param rhino_context_path: Path to rhino context file. Will be created and customized on online surface, currently using default (resources/contexts/windows/coffee_maker_windows.rhn)
     """
     def __init__(self,
-            dsname,                                 
+            ds_callback,
+            rhino_callback,
+
+            # Deepspeech variables
+            dsname = "deepspeech-0.8.2-models.tflite",                                 
             dsscorername = None,
             use_scorer = False,
             aggressiveness = 0,
-            library_path = pvporcupine.LIBRARY_PATH,
-            model_path = pvporcupine.MODEL_PATH,
-            keywords = ["blueberry"],
-            keyword_paths = None,
-            sensitivities = None
+
+            # Porcupine variables
+            porc_library_path = pvporcupine.LIBRARY_PATH,
+            porc_model_path = pvporcupine.MODEL_PATH,
+            porc_keywords = ["blueberry"],
+            porc_keyword_paths = None,
+            porc_sensitivities = None,
+
+            # Rhino variables
+            rhino_library_path = pvrhino.LIBRARY_PATH,
+            rhino_model_path = pvrhino.MODEL_PATH,
+            rhino_context_path = "resources/context/coffee_maker_windows.rhn"
             ):
 
         # Multithreading
         super(Recognizer, self).__init__()
 
         # Init variables
+        self.ds_callback = ds_callback
+        self.rhino_callback = rhino_callback
         self.dsname = dsname
         self.dsscorername = dsscorername
         self.use_scorer = use_scorer
         self.aggressiveness = aggressiveness
-        self.library_path = library_path
-        self.model_path = model_path
-        self.keyword_paths = keyword_paths
+        self.porc_library_path = porc_library_path
+        self.porc_model_path = porc_model_path
+        self.porc_keyword_paths = porc_keyword_paths
+        self.porc_running = True
+        self.rhino_library_path = rhino_library_path
+        self.rhino_model_path = rhino_model_path
+        self.rhino_context_path = rhino_context_path
 
-        if keyword_paths is None:
-            self.keyword_paths = [pvporcupine.KEYWORD_PATHS[x] for x in keywords] # Get keyword path from given keywords
+        if porc_keyword_paths is None:
+            self.porc_keyword_paths = [pvporcupine.KEYWORD_PATHS[x] for x in porc_keywords] # Get keyword path from given keywords
         else:
-            self.keyword_paths = str(os.path.join(os.getcwd(), keyword_paths))
+            self.porc_keyword_paths = str(os.path.join(os.getcwd(), porc_keyword_paths))
         
-        if sensitivities is None:
-            self.sensitivities = [0.5] * len(self.keyword_paths) # Create a list of "0.5" values the length of amount of keywords
+        if porc_sensitivities is None:
+            self.porc_sensitivities = [0.5] * len(self.porc_keyword_paths) # Create a list of "0.5" values the length of amount of keywords
 
         # Initialize DeepSpeech model
         modelPath = str(os.path.join(os.getcwd(), "model", self.dsname))
@@ -186,6 +210,13 @@ class Recognizer(Thread):
                 scorerLoadEnd = timer()
                 print("Successfully loaded scorer in {:.3}s".format(scorerLoadEnd - scorerLoadStart))
     
+    def terminate(self):
+        """
+        Terminates the while loop for wake word detection, thus being able to close the thread.
+        """
+        self.porc_running = False
+        return
+
     def transcribe(self):
         """
         Initialize voice activity detection and feed it to DeepSpeech model to transcribe.
@@ -208,11 +239,11 @@ class Recognizer(Thread):
                     spinner.start()
                     modelStream.feedAudioContent(np.frombuffer(frame, np.int16))
 
-                # If encountering an empty frame, stop feeding to model and print
+                # If encountering an empty frame, stop feeding to model and send data to callback function specified in main
                 else:
                     spinner.stop()
                     text = modelStream.finishStream()
-                    print("Recognized: {}".format(text))
+                    self.ds_callback(text)
                     return 1
                     # If "stop" encountered, stop stream
                     # if "stop" in text:
@@ -228,14 +259,74 @@ class Recognizer(Thread):
         finally:
             vad_audio.close()
 
+    def speech_to_intent(self):
+        """
+        Starts an audio stream and listens to everything mentioned. If any commmands are detected,
+        performs inference to determine intent. Returned types of intent are 
+        """
+
+        # Initialize libraries
+        rhino = None
+        pa = None
+        stream = None
+
+        try:
+
+            rhino = pvrhino.create(
+                library_path=self.rhino_library_path,
+                model_path=self.rhino_model_path,
+                context_path=self.rhino_context_path
+            )
+
+            # Initialize PyAudio and an audio stream
+            pa = pyaudio.PyAudio()
+            stream = pa.open(
+                format = FORMAT,
+                channels = CHANNELS,
+                rate = rhino.sample_rate,
+                input = True, # Specify as input
+                frames_per_buffer= rhino.frame_length)
+
+            # Initialize voice activity detector and audio stream with agressiveness between 0 and 3
+            spinner = Halo(spinner = 'line', color = 'magenta')
+            print(rhino.context_info)
+
+            # Rhino detection
+            while True:
+
+                spinner.start()
+                pcm = stream.read(rhino.frame_length)
+                unpacked = struct.unpack_from("h" * rhino.frame_length, pcm) # Unpack "frame length" amount of "short" data types in C ("h" string) from buffer. Read more on struct Format Strings to understand.
+                done = rhino.process(unpacked)
+
+                if done:
+                    spinner.stop()
+                    result = rhino.get_inference()
+                    self.rhino_callback(result)
+                    return 1
+        
+        except KeyboardInterrupt:
+            print("Stopping speech-to-intent detection...")
+
+        finally:
+            if rhino is not None:
+                rhino.delete()
+
+            if stream is not None:
+                stream.close()
+            
+            if pa is not None:
+                pa.terminate()
+
     def run(self):
         """
-        Creates
+        Creates an audio stream with PyAudio which constantly listens for the keywords specified.
+        If a keyword is detected, self.transcribe() is called to start transcribing commands.
         """
         
         # Extract keywords from keyword_paths
         keywords = list()
-        for keyword in self.keyword_paths:
+        for keyword in self.porc_keyword_paths:
             words = os.path.basename(keyword).replace(".ppn", "").split("_") # Takes the file, deletes .ppn and splits it into a list of strings
             keywords.append(words[0])
         
@@ -245,14 +336,15 @@ class Recognizer(Thread):
         stream = None
 
         try:
+            # Initialize wake word detection (Porcupine)
             porcupine = pvporcupine.create(
-                library_path = self.library_path,
-                model_path = self.model_path,
-                keyword_paths = self.keyword_paths,
-                sensitivities = self.sensitivities)
+                library_path = self.porc_library_path,
+                model_path = self.porc_model_path,
+                keyword_paths = self.porc_keyword_paths,
+                sensitivities = self.porc_sensitivities)
             
+            # Initialize PyAudio and an audio stream
             pa = pyaudio.PyAudio()
-
             stream = pa.open(
                 format = FORMAT,
                 channels = CHANNELS,
@@ -260,18 +352,28 @@ class Recognizer(Thread):
                 input = True, # Specify as input
                 frames_per_buffer= porcupine.frame_length)
             
+            # Print readyness for listening
             print("Listening for keyword with sensitivities:")
-            for keyword, sensitivity in zip(keywords, self.sensitivities):
+            for keyword, sensitivity in zip(keywords, self.porc_sensitivities):
                 print("    {} {}".format(keyword, sensitivity))
 
-            while True:
+            # Infinite loop unless self.terminate() called in main thread
+            while self.porc_running:
+
+                # Reads porcupine's required frame length of data from audio stream
                 pcm = stream.read(porcupine.frame_length)
+
+                # Unpacks the data from a C data type (short) to a Python int
                 unpacked = struct.unpack_from("h" * porcupine.frame_length, pcm) # Unpack "frame length" amount of "short" data types in C ("h" string) from buffer. Read more on struct Format Strings to understand.
 
+                # Process data through Porcupine. Returns the index of the keyword from given array if it found one, -1 otherwise
                 result = porcupine.process(unpacked)
                 if result >= 0:
                     print("Detected keyword {}".format(keywords[result]))
-                    self.transcribe()
+
+                    # Calls self.transcribe() to start listening for commands. Can be exchanged for any other function to call on keyword detection.
+                    # self.transcribe()
+                    self.speech_to_intent()
                     print("Done")
 
         except KeyboardInterrupt:

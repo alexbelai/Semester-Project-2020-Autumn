@@ -1,0 +1,2 @@
+include ':rhino'
+rootProject.name = "Rhino"
