@@ -147,6 +147,7 @@ class Recognizer(Thread):
     def __init__(self,
             ds_callback,
             rhino_callback,
+            scanner,
 
             # Deepspeech variables
             dsname = "deepspeech-0.8.2-models.tflite",                                 
@@ -171,6 +172,7 @@ class Recognizer(Thread):
         super(Recognizer, self).__init__()
 
         # Init variables
+        self.scanner = scanner
         self.ds_callback = ds_callback
         self.rhino_callback = rhino_callback
         self.dsname = dsname
@@ -373,7 +375,8 @@ class Recognizer(Thread):
 
                     # Calls self.transcribe() to start listening for commands. Can be exchanged for any other function to call on keyword detection.
                     # self.transcribe()
-                    self.speech_to_intent()
+                    # self.speech_to_intent()
+                    self.scanner.read()
                     print("Done")
 
         except KeyboardInterrupt:
