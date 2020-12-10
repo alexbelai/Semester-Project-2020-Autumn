@@ -2,9 +2,6 @@
 
 ## Documentation
 
-GPIO Zero (High-Level Button, Sensor, LED libraries)
-https://gpiozero.readthedocs.io/en/stable/
-
 PiGPIO (Low-level library for accessing pins)
 http://abyz.me.uk/rpi/pigpio/python.html
 
@@ -25,5 +22,3 @@ https://github.com/Picovoice/porcupine
 PicoVoice Rhino (Speech Intent Detection)
 https://picovoice.ai/docs/quick-start/rhino-python/
 https://github.com/Picovoice/rhino
-
-Note: we might use picovoice Rhino instead of deepspeech in future

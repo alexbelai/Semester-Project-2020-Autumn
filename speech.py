@@ -127,10 +127,9 @@ class Recognizer(Thread):
     """
     Class for wake word detection using Porcupine, PyAudio, WebRTCVad and DeepSpeech library. 
     It creates an input audio stream, which it monitors on a separate thread for a wake word.
-    Whenever the wake word is heard, it starts transcribing audio until word "stop" is mentioned.
+    Whenever the wake word is heard, it starts "Speech-To-Intent" module and interprets commands.
     
-    :param ds_callback: Callback function to transfer DeepSpeech results of transcription to.
-    :param rhino_callback: Callback function to transfer Rhino results to. Is given an object with "is_understood", "intent" and "slots" getters.
+    :param speechqueue: Queue to put speech commands in for other threads to interpret
     :param dsname: Name of deepspeech model.
     :param dsscorername: Name of deepspeech scorer.
     :param use_scorer: Whether to use scorer or not. Default: False
@@ -145,9 +144,7 @@ class Recognizer(Thread):
     :param rhino_context_path: Path to rhino context file. Will be created and customized on online surface, currently using default (resources/contexts/windows/coffee_maker_windows.rhn)
     """
     def __init__(self,
-            ds_callback,
-            rhino_callback,
-            scanner,
+            queue,
 
             # Deepspeech variables
             dsname = "deepspeech-0.8.2-models.tflite",                                 
@@ -172,9 +169,7 @@ class Recognizer(Thread):
         super(Recognizer, self).__init__()
 
         # Init variables
-        self.scanner = scanner
-        self.ds_callback = ds_callback
-        self.rhino_callback = rhino_callback
+        self.queue = queue
         self.dsname = dsname
         self.dsscorername = dsscorername
         self.use_scorer = use_scorer
@@ -245,7 +240,7 @@ class Recognizer(Thread):
                 else:
                     spinner.stop()
                     text = modelStream.finishStream()
-                    self.ds_callback(text)
+                    self.print_result(text)
                     return 1
                     # If "stop" encountered, stop stream
                     # if "stop" in text:
@@ -304,7 +299,7 @@ class Recognizer(Thread):
                 if done:
                     spinner.stop()
                     result = rhino.get_inference()
-                    self.rhino_callback(result)
+                    self.print_intent(result)
                     return 1
         
         except KeyboardInterrupt:
@@ -320,7 +315,28 @@ class Recognizer(Thread):
             if pa is not None:
                 pa.terminate()
 
+    def print_intent(self, intent):
+        """
+        This is the function which can extract speech-to-intent data from Rhino. It is called with an object with "is_understood", "intent" and "slots" getters.
+        """
+        if intent.is_understood:
+            print("Understood intent: {}".format(intent.intent))
+            for slot, value in intent.slots.items():
+                print("    {} : {}".format(slot, value))
+            self.queue.put(1)
+
+        else:
+            print("Didn't understand the command.")
+
+    def print_result(self, result):
+        """
+        This is the function which can extract data from the DeepSpeech engine. It will be called with a string every time something is transcribed by the robot.
+        """
+        print ("Recognized: {}".format(result))
+        return
+
     def run(self):
+    
         """
         Creates an audio stream with PyAudio which constantly listens for the keywords specified.
         If a keyword is detected, self.transcribe() is called to start transcribing commands.
@@ -375,8 +391,7 @@ class Recognizer(Thread):
 
                     # Calls self.transcribe() to start listening for commands. Can be exchanged for any other function to call on keyword detection.
                     # self.transcribe()
-                    # self.speech_to_intent()
-                    self.scanner.read()
+                    self.speech_to_intent()
                     print("Done")
 
         except KeyboardInterrupt:

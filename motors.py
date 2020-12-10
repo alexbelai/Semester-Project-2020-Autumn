@@ -6,14 +6,18 @@
 
 import pigpio
 import time
-pi = pigpio.pi() # Sets current Pi as controlled Pi
+from threading import Thread
 
-class MotorController:
+class MotorController():
+    """
+    Class holding motors and their controls.
+    """
 
-    def __init__ (self, motors):
+    def __init__ (self, pi, motors):
 
         # Extract motors from list
         self.motors = motors
+        self.pi = pi
         self.Left = self.motors[0]
         self.Right = self.motors[1]
 
@@ -60,13 +64,14 @@ class MotorController:
     def cleanup(self):
         """Cleans pin states and stops signals going to motors"""
         self.stop()
-        pi.stop()
+        self.pi.stop()
 
 class Stepper:
 
-    def __init__ (self, in1, in2, in3, in4):
+    def __init__ (self, pi, in1, in2, in3, in4):
         
         # Initialize control pin behavior
+        self.pi = pi
         self.controlpins = [in1,in2,in3,in4]
         for pin in self.controlpins:
             pi.set_mode(pin, pigpio.OUTPUT)
@@ -106,13 +111,15 @@ class Stepper:
         for i in range(turns):
             for step in range(self.loopsize): # For each step in the sequence
                 for pin in range(4): # For each control pin
-                    pi.write(self.controlpins[pin], self.fullsequence[step][pin])
-                time.sleep(0.01) # 10 ms delay
+                    self.pi.write(self.controlpins[pin], self.fullsequence[step][pin])
+                time.sleep(0.002) # 2 ms delay
 
 class Motor:
     
-    def __init__ (self, forwardpin, backwardpin):
+    def __init__ (self, pi, forwardpin, backwardpin):
         
+        self.pi = pi
+
         # Setting forward and backward control for motor
         self.forwardPin = forwardpin
         self.backwardPin = backwardpin
@@ -126,27 +133,19 @@ class Motor:
 
     def getCurrentState(self):
         """Returns current state of motor pins in a tuple of 0s or 1s (forwardstate, backwardstate)"""
-        return (pi.read(self.forwardPin), pi.read(self.backwardPin))
+        return (self.pi.read(self.forwardPin), self.pi.read(self.backwardPin))
 
     def setForward(self):
         """Set forward pin of motor while turning off other pin"""
-        pi.write(self.forwardPin, 1)
-        pi.write(self.backwardPin, 0)
+        self.pi.write(self.forwardPin, 1)
+        self.pi.write(self.backwardPin, 0)
 
     def setBackward(self):
         """Set forward pin of motor while turning off other pin"""
-        pi.write(self.backwardPin, 1)
-        pi.write(self.forwardPin, 0)
+        self.pi.write(self.backwardPin, 1)
+        self.pi.write(self.forwardPin, 0)
 
     def stop(self):
         """Stops the given motor by clearing pins"""
-        pi.write(self.forwardPin, 0)
-        pi.write(self.backwardPin, 0)
-
-def main():
-
-    stepper = Stepper(26,19,13,6)
-    stepper.clockwise(512)
-
-if __name__ == "__main__":
-    main()
+        self.pi.write(self.forwardPin, 0)
+        self.pi.write(self.backwardPin, 0)
