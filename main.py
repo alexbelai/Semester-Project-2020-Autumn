@@ -1,5 +1,6 @@
 # Main robot control file
 import speech
+import rfid
 import deepspeech                           # Machine learning model library
 import numpy as np                          # Numpy for audio buffer data arrays
 #import motors
@@ -11,6 +12,8 @@ import os                                   # Get path function
 from halo import Halo                       # Animated spinners for loading
 from time import perf_counter as timer   # Timer to time model load speed
 from threading import Thread
+
+
 
 
 # TODO: Transfer to normal pbmm deepspeech model compatible with Pi
@@ -27,11 +30,13 @@ from threading import Thread
 # Initialize motor controller
 # motorControl = motors.MotorController(motorGroup)
 
+scanner = rfid.rfid_scanner()
+
 def main():
     # TODO: Reset pins at shutdown
 
     # Initialize Thread 1 as speech recognition running in background. Note: Thread is a subclass of Recognizer
-    thread1 = speech.Recognizer(print_result, print_intent)
+    thread1 = speech.Recognizer(print_result, print_intent, scanner)
 
     # Initialize Thread 2 as whatever else function or class
     #stop_thread = False
