@@ -1,6 +1,9 @@
 class Map():
     """
     Class that holds 2D Coordinate logic for robot to follow with RFID stickers.
+    If a given tile is traversible, it is stored as a "1".
+    If it has an RFID sticker associated with it, it is stored as a letter from "a" to "z"
+    Otherwise, it is stored as a "0".
     """
     def __init__ (self, mapfile):
         
@@ -72,8 +75,3 @@ class Map():
                 return letter
 
         return False
-
-structure = Map("map1.txt")
-structure.print()
-neighbors = structure.connections((1, 3))
-print(neighbors)
