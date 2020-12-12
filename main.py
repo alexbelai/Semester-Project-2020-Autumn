@@ -26,14 +26,13 @@ def main():
 
     pi = pigpio.pi() # Sets current Pi as controlled Pi
     speechqueue = Queue()
-    coords = mapping.Map("map1.txt")
     # scanner = rfid.rfid_scanner()
 
     # Initialize Thread 1 as speech recognition running in background. 
     thread1 = speech.Recognizer(speechqueue)
 
     # Initialize Thread 2 as movement class, checking queue for commands.
-    thread2 = movement.Movement(speechqueue, pi, coords)
+    thread2 = movement.Movement(speechqueue, pi, "map1.txt", (2,5))
 
     # Initialize Thread 2 as whatever else function or class
     #stop_thread = False
