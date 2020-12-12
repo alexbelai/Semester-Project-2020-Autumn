@@ -162,7 +162,7 @@ class Recognizer(Thread):
             # Rhino variables
             rhino_library_path = pvrhino.LIBRARY_PATH,
             rhino_model_path = pvrhino.MODEL_PATH,
-            rhino_context_path = "resources/context/coffee_maker_windows.rhn"
+            rhino_context_path = "resources/contexts/raspberry-pi/happyhelper_raspberry-pi_1_11_2021_v1.6.0_.rhn"
             ):
 
         # Multithreading
@@ -323,7 +323,8 @@ class Recognizer(Thread):
             print("Understood intent: {}".format(intent.intent))
             for slot, value in intent.slots.items():
                 print("    {} : {}".format(slot, value))
-            self.queue.put(1)
+                command = [slot, value]
+                self.queue.put(command)
 
         else:
             print("Didn't understand the command.")
