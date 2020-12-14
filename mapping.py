@@ -108,6 +108,15 @@ class Map():
 
         return connections
 
+    def get_coords_of_sticker(self, sticker):
+        """Returns coordinates of given sticker based on its letter representation, returns None if invalid sticker"""
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.coordinates[y][x] == sticker:
+                    return (y, x) 
+        
+        return None
+
     def is_sticker(self, coords):
         """
         Checks whether a given tile with the formula (y, x) has an RFID sticker associated with it.
@@ -140,14 +149,15 @@ class Map():
         else:
             return False
 
-    def find_path(self, end):
+    def find_path(self, sticker):
         """
-        Finds the shortest path from current node to an end node by the use of a BFS pathfinding algorithm.
+        Finds the shortest path from current node to an end sticker by the use of a BFS pathfinding algorithm.
         Returns an ordered list of elements with the format [coordinates, movement direction reqired to reach tile].
         """
-        # Check whether desired end tile is valid
-        if not self.is_valid_tile(end):
-            raise Exception(f"{end} is not a valid tile")
+        # Check whether desired end sticker exists
+        end = self.get_coords_of_sticker(sticker)
+        if end is None:
+            raise Exception(f"'{sticker}' is not a valid sticker")
             
         # Create a start node and add it to queue for inspection
         start = Node(state = self.current, parent = None, action = None)
@@ -205,4 +215,4 @@ class Map():
                     queue.add(child)
 
 samplemap = Map("map1.txt", (2,5))
-print(samplemap.find_path((4,9)))
+print(samplemap.find_path("g"))

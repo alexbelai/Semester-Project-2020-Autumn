@@ -29,14 +29,13 @@ def main():
     GPIO.setmode(GPIO.BCM)#sets GPIO mode to board, so that pins can be called by their numbers
 
     speechqueue = Queue()
-    coords = mapping.Map("map1.txt")
     # scanner = rfid.rfid_scanner()
 
     # Initialize Thread 1 as speech recognition running in background. 
     thread1 = speech.Recognizer(speechqueue)
 
     # Initialize Thread 2 as movement class, checking queue for commands.
-    thread2 = movement.Movement(speechqueue, pi, coords)
+    thread2 = movement.Movement(speechqueue, pi, "map1.txt", (2,5))
 
     # Initialize Thread 2 as whatever else function or class
     #stop_thread = False
