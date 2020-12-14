@@ -40,11 +40,10 @@ class Movement(Thread):
 
                 # Stepper Pill Mechanism
                 if commands[0] == "pillCount":
-
-                    amount = int(commands[1])
+                    amount = self.number_of_pills(commands[1])
                     thread3 = Thread(target = self.stepper.clockwise, args = (amount))
-                    # TODO: RAISE ARM WITH PILLS
                     thread3.join()
+                    # TODO: RAISE ARM WITH PILLS
 
                 # Move to Specific Table
                 elif commands[0] == "tableName":
@@ -55,7 +54,8 @@ class Movement(Thread):
 
                 self.queue.task_done() # Indicate that task has been processed
             else:
-                sleep(0.01)
+                print("Waiting for commands...")
+                sleep(0.1)
 
     def check_for_commands(self):
         """
