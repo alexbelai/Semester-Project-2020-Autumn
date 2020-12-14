@@ -8,7 +8,8 @@ import pigpio
 from subprocess import call                 # Send commands to Pi. Mostly used to program shutdown button.
 from time import sleep                      # Delay function
 #import sensor
-#import pigpio                               # Raspberry Pi Pin control
+#import pigpio                              # Raspberry Pi Pin control
+import RPi.GPIO as GPIO
 import os                                   # Get path function
 from halo import Halo                       # Animated spinners for loading
 from time import perf_counter as timer      # Timer to time model load speed
@@ -24,7 +25,9 @@ import mapping
 
 def main():
 
-    pi = pigpio.pi() # Sets current Pi as controlled Pi
+    pi = GPIO # Sets current Pi as controlled Pi
+    GPIO.setmode(GPIO.BCM)#sets GPIO mode to board, so that pins can be called by their numbers
+
     speechqueue = Queue()
     # scanner = rfid.rfid_scanner()
 
