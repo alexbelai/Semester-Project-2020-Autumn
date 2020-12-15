@@ -1,15 +1,21 @@
 import mfrc522
 from time import sleep
 import RPi.GPIO as GPIO
+from threading import Thread
 
-class rfid_scanner():
+class rfid_scanner(Thread):
 
-    def __init__ (self):
+    def __init__ (self, queue):
+
+        super(rfid_scanner, self).__init__()
+        self.queue = queue
+        self.running = True
         self.reader = mfrc522.MFRC522()
 
-    def read_data(self):
+    def run(self):
         """Start reading sequence, return when data read."""
-        while True:
+
+        while self.running:
 
             # Scan for cards
             (status,TagType) = self.reader.MFRC522_Request(self.reader.PICC_REQIDL)
@@ -23,8 +29,8 @@ class rfid_scanner():
                 # Print UID
                 print("UID: "+str(uid[0])+","+str(uid[1])+","+str(uid[2])+","+str(uid[3]))
 
-                # Return letter of sticker by comparing 3rd number of UID with database
-                return self.uid_to_sticker(uid[2])
+                # Put letter of sticker in queue by comparing 3rd number of UID with database
+                self.queue.put(self.uid_to_sticker(uid[2]))
     
     def uid_to_sticker(self, data):
         """Converts UID data to sticker letter from database, if it exists. Otherwise, returns None"""
@@ -50,3 +56,6 @@ class rfid_scanner():
             return "j"
         else:
             return None
+    
+    def stop(self):
+        self.running = False
