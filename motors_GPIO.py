@@ -7,7 +7,7 @@
 #import RPi.GPIO as GPIO
 import time
 from threading import Thread
-
+import RPi.GPIO as GPIO
 
 
 class MotorController():
@@ -79,6 +79,8 @@ class Stepper:
         
         # Initialize control pin behavior
         self.pi = pi
+        self.pi.setmode(GPIO.BOARD)
+        self.pi.setwarnings(False)
         self.controlpins = [in1,in2,in3,in4]
         for pin in self.controlpins:
             pi.setup(pin, pi.OUT)
@@ -110,16 +112,17 @@ class Stepper:
         
         Note: There is no way to determine exact orientation of stepper once a loop has been made, make precise loops so you don't ruin motor orientation
 
-        360 deg = 512 turns
-        180 deg = 256 turns
-        90 deg = 128 turns
-        45 deg = 64 turns
+        360 deg = 528 turns
+        180 deg = 264 turns
+        90 deg = 132 turns
+        45 deg = 66 turns
         """
-        for _ in range(turns):
+        for i in range(turns):
             for step in range(self.loopsize): # For each step in the sequence
                 for pin in range(4): # For each control pin
                     self.pi.output(self.controlpins[pin], self.fullsequence[step][pin])
-                time.sleep(0.002) # 2 ms delay
+                time.sleep(0.01) # 10 ms delay
+            print(f"Loop {i}")
 
 class Motor:
     
@@ -156,3 +159,7 @@ class Motor:
         """Stops the given motor by clearing pins"""
         self.pi.output(self.forwardPin, 0)
         self.pi.output(self.backwardPin, 0)
+        
+stepper = Stepper(GPIO, 8, 10, 12, 16)
+stepper.clockwise(2048)
+time.sleep(2)

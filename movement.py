@@ -1,7 +1,7 @@
 from threading import Thread
 from queue import Queue
 from time import sleep
-from motors import *
+from motors_GPIO import *
 from mapping import *
 from ir_sensor import *
 from rfid import *
@@ -25,10 +25,10 @@ class Movement(Thread):
         self.queue = queue
         self.running = True
         self.direction = startdirect
-        self.motor1 = Motor(self.pi, 0, 0) # Motor 1, requires 2 pins as input
-        self.motor2 = Motor(self.pi, 0, 0) # Motor 2, requires 2 pins as input
-        self.dcmotors = MotorController(self.pi, [self.motor1, self.motor2])
-        #self.stepper = Stepper(self.pi, 0, 0, 0, 0) # Stepper motor, requires 4 pins as input
+        #self.motor1 = Motor(self.pi, 0, 0) # Motor 1, requires 2 pins as input
+        #self.motor2 = Motor(self.pi, 0, 0) # Motor 2, requires 2 pins as input
+        #self.dcmotors = MotorController(self.pi, [self.motor1, self.motor2])
+        self.stepper = Stepper(self.pi, 8, 10, 12, 16) # Stepper motor, requires 4 pins as input
 
     def run(self):
         """
@@ -48,9 +48,11 @@ class Movement(Thread):
 
                 # Stepper Pill Mechanism
                 if data[0] == "pillCount":
-                    amount = self.number_of_pills(data[1])
-                    #thread3 = Thread(target = self.stepper.clockwise, args = (amount))
-                    #thread3.join()
+                    
+                    # 528 is a full loop, 132 is 90 degrees of rotation = 1 pill
+                    amount = 132 * self.number_of_pills(data[1])
+                    self.stepper.clockwise(amount)
+
                     # TODO: RAISE ARM WITH PILLS
 
                 # Move to Specific Table

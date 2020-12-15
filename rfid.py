@@ -5,16 +5,15 @@ from threading import Thread
 
 class rfid_scanner(Thread):
 
-    def __init__ (self, queue):
+    def __init__ (self):
 
         super(rfid_scanner, self).__init__()
-        self.queue = queue
+        #self.queue = queue
         self.running = True
+        GPIO.setwarnings(False)
         self.reader = mfrc522.MFRC522()
 
     def run(self):
-        """Start reading sequence, return when data read."""
-
         while self.running:
 
             # Scan for cards
@@ -30,10 +29,12 @@ class rfid_scanner(Thread):
                 print("UID: "+str(uid[0])+","+str(uid[1])+","+str(uid[2])+","+str(uid[3]))
 
                 # Put letter of sticker in queue by comparing 3rd number of UID with database
-                self.queue.put(self.uid_to_sticker(uid[2]))
+                #self.queue.put(self.uid_to_sticker(uid[2]))
+                print("Read data")
+                print(f"UID: {self.uid_to_sticker(uid[2])}")
+                sleep(0.2)
     
     def uid_to_sticker(self, data):
-        """Converts UID data to sticker letter from database, if it exists. Otherwise, returns None"""
         if data == 241:
             return "a"
         elif data == 237:
@@ -59,3 +60,28 @@ class rfid_scanner(Thread):
     
     def stop(self):
         self.running = False
+        
+"""
+class rfid_scanner():
+    
+    def __init__(self):
+        GPIO.setwarnings(False)
+        self.rfid = mfrc522.SimpleMFRC522()
+
+    def read(self): 
+        while True:
+            id, info = self.rfid.read()
+            print(id)
+            print(info)
+            sleep(0.2)
+    def write(self, info):
+        print("Place the tag, to write")
+        self.rfid.write(info)
+        print("new info saved")
+"""
+
+rfidthread = rfid_scanner()
+#rfidthread.read()
+rfidthread.start()
+while True:
+    sleep(1)
