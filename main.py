@@ -1,15 +1,13 @@
 # Main robot control file
 import speech
-#import rfid
+import rfid
 import deepspeech                           # Machine learning model library
 import numpy as np                          # Numpy for audio buffer data arrays
-import motors
-import pigpio
+import motors_GPIO
 from subprocess import call                 # Send commands to Pi. Mostly used to program shutdown button.
 from time import sleep                      # Delay function
-#import sensor
-#import pigpio                              # Raspberry Pi Pin control
-#import RPi.GPIO as GPIO
+import sensor
+import RPi.GPIO as GPIO
 import os                                   # Get path function
 from halo import Halo                       # Animated spinners for loading
 from time import perf_counter as timer      # Timer to time model load speed
@@ -20,9 +18,8 @@ import mapping
 
 def main():
 
-    #pi = GPIO # Sets current Pi as controlled Pi
-    pi = 1
-    #GPIO.setmode(GPIO.BCM)#sets GPIO mode to board, so that pins can be called by their numbers
+    pi = GPIO # Sets current Pi as controlled Pi
+    GPIO.setmode(GPIO.BOARD)#sets GPIO mode to board, so that pins can be called by their numbers
 
     # Initialize queue to put speech commands in
     speechqueue = Queue()
@@ -31,7 +28,7 @@ def main():
     thread1 = speech.Recognizer(speechqueue)
 
     # Initialize Thread 2 as movement class, checking queue for commands.
-    thread2 = movement.Movement(speechqueue, pi, "map1.txt", (2,5))
+    thread2 = movement.Movement(speechqueue, pi, "map1.txt", "l", (2,5))
 
     # Initialize Thread 2 as whatever else function or class
     #stop_thread = False
