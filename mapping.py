@@ -125,11 +125,10 @@ class Map():
         if self.is_valid_tile(coords):
             y, x = coords
             letter = self.coordinates[y][x]
-            if letter != "0":
-                if letter.isalpha():
-                    return letter
+            if letter.isalpha():
+                return letter
 
-        return False
+        return None
 
     def set_current_coords(self, coords):
         """Sets given coordinates to be current stored coordinates in map class"""

@@ -141,7 +141,7 @@ class Recognizer(Thread):
     :param porc_sensitivities: Sensitivity to wake word detection between 0 and 1. Default: 0.5
     :param rhino_library_path: Path to rhino library (lib/raspberry-pi/arm11/libpv_rhino.so)
     :param rhino_model_path: Path to rhino model (lib/common/rhino_params.pv)
-    :param rhino_context_path: Path to rhino context file. Will be created and customized on online surface, currently using default (resources/contexts/windows/coffee_maker_windows.rhn)
+    :param rhino_context_path: Path to rhino context file. Will be created and customized on online surface, currently using default (resources/contexts/windows/coffee_maker_windows.rhn), Pi: "resources/contexts/raspberry-pi/happyhelper_raspberry-pi_1_11_2021_v1.6.0_.rhn"
     """
     def __init__(self,
             queue,
@@ -162,7 +162,7 @@ class Recognizer(Thread):
             # Rhino variables
             rhino_library_path = pvrhino.LIBRARY_PATH,
             rhino_model_path = pvrhino.MODEL_PATH,
-            rhino_context_path = "resources/contexts/raspberry-pi/happyhelper_raspberry-pi_1_11_2021_v1.6.0_.rhn"
+            rhino_context_path = "resources/contexts/windows/coffee_maker_windows.rhn"
             ):
 
         # Multithreading
