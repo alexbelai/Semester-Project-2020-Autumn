@@ -1,6 +1,7 @@
 import deepspeech
 import numpy as np
 import pyaudio
+from queue import Queue
 import time
 import webrtcvad
 import queue
@@ -407,4 +408,3 @@ class Recognizer(Thread):
             
             if pa is not None:
                 pa.terminate()
-            
