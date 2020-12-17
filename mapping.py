@@ -213,5 +213,5 @@ class Map():
                     child = Node(state = coords, parent = node, action = direction)
                     queue.add(child)
 
-samplemap = Map("map1.txt", (2,5))
-print(samplemap.find_path("g"))
+#samplemap = Map("map1.txt", (2,5))
+#print(samplemap.find_path("g"))

@@ -14,64 +14,71 @@ class MotorController():
     """
     Class holding motors and their controls.
     """
-    def __init__ (self, pi, motors):
+    def __init__ (self, pi, stby, motors):
         
         # Extract motors from list
         self.motors = motors
         self.pi = pi
         self.Left = self.motors[0]
         self.Right = self.motors[1]
+        
+        # Set motor speed ratio
+        self.Left.set_speed(4)
+        self.Right.set_speed(11.25)
 
         # Set up HBridge pins for Motors
-        self.HBEnable12 = 0
-        self.HBEnable34 = 0
+        self.stby = 36
 
-        # sets GPIO mode to board, so that pins can be called by their numbers
-        # pi.setmode(pi.BCM)
+        # Write 1 to STDBY
+        pi.setup(self.stby, pi.OUT)
+        pi.output(self.stby, 1)
         
-        #From main, pi is passed as GPIO
-
-        pi.setup(self.HBEnable12, pi.OUT)
-        pi.setup(self.HBEnable34, pi.OUT)
-        pi.output(self.HBEnable12, 1)
-        pi.output(self.HBEnable34, 1)
-
-    # TODO:
-    #def speed(self, cycle):
-    #    """
-    #    Sets duty cycle of all motors to given amount between 0-100%
-    #    """
-        
-    
-    def forward(self):
-        """Sets all motors to move forward"""
-        for motor in self.motors:
-            motor.setForward()
-
     def backward(self):
         """Sets all motors to move backward"""
         for motor in self.motors:
-            motor.setBackward()
-    
-    def right(self):
-        """Turns right"""
-        self.Left.setBackward()
-        self.Right.setForward()
+            motor.setForward()
 
-    def left(self):
-        """Turns right"""
-        self.Left.setForward()
-        self.Right.setBackward()
+    def forward(self):
+        """Sets all motors to move forward"""
+        for motor in self.motors:
+            motor.setBackward()
 
     def stop(self):
         """Stops all motor activity"""
         for motor in self.motors:
             motor.stop()
+            
+    def bit_right(self):
+        self.Right.setBackward()
+        time.sleep(0.3)
+        self.Right.stop()
+        return
+    
+    def bit_left(self):
+        self.Left.setBackward()
+        time.sleep(0.3)
+        self.Left.stop()
+        return
+    
+    def turn_ccw(self):
+        self.Left.setBackward()
+        self.Right.setForward()
+        time.sleep(3)
+        self.Left.stop()
+        self.Right.stop()
+        return
+    
+    def turn_cw(self):
+        self.Left.setForward()
+        self.Right.setBackward()
+        time.sleep(3)
+        self.Left.stop()
+        self.Right.stop()
+        return
     
     def cleanup(self):
         """Cleans pin states and stops signals going to motors"""
         self.pi.cleanup()
-        #GPIO.cleanup() clears all pins from outputs Might not be needed here
 
 class Stepper:
 
@@ -79,8 +86,6 @@ class Stepper:
         
         # Initialize control pin behavior
         self.pi = pi
-        self.pi.setmode(GPIO.BOARD)
-        self.pi.setwarnings(False)
         self.controlpins = [in1,in2,in3,in4]
         for pin in self.controlpins:
             pi.setup(pin, pi.OUT)
@@ -126,7 +131,7 @@ class Stepper:
 
 class Motor:
     
-    def __init__ (self, pi, forwardpin, backwardpin):
+    def __init__ (self, pi, pwm, forwardpin, backwardpin):
         
         self.pi = pi
 
@@ -135,11 +140,15 @@ class Motor:
         self.backwardPin = backwardpin
 
         # Set motor pins as output
-        pi.setup(self.forwardPin, pi.OUT)
-        pi.setup(self.backwardPin, pi.OUT)
-
-        # Clear motor pins on init
-        pi.cleanup()
+        self.pi.setup(self.forwardPin, self.pi.OUT)
+        self.pi.setup(self.backwardPin, self.pi.OUT)
+        
+        # PWM Setup
+        self.pwmpin = pwm
+        self.pi.setup(self.pwmpin, self.pi.OUT)
+        self.pwm = self.pi.PWM(self.pwmpin, 17500)
+        self.pwm.start(0)
+        self.set_speed(0)
 
     def getCurrentState(self):
         """Returns current state of motor pins in a tuple of 0s or 1s (forwardstate, backwardstate)"""
@@ -159,7 +168,39 @@ class Motor:
         """Stops the given motor by clearing pins"""
         self.pi.output(self.forwardPin, 0)
         self.pi.output(self.backwardPin, 0)
-        
-stepper = Stepper(GPIO, 8, 10, 12, 16)
-stepper.clockwise(2048)
-time.sleep(2)
+    
+    def set_speed(self, dc):
+        """Sets duty cycle of PWM to amount between 0 and 100"""
+        self.pwm.ChangeDutyCycle(dc)
+        return
+
+
+#TESTING CODE
+#GPIO.setmode(GPIO.BOARD)
+#GPIO.setwarnings(False)
+
+#stepper = Stepper(GPIO, 8, 10, 35, 16)
+#stepper.clockwise(2048)
+#time.sleep(2)
+"""
+motor1 = Motor(GPIO, 32, 40, 37)
+motor2 = Motor(GPIO, 12, 13, 15)
+controller = MotorController(GPIO, 36, [motor1, motor2])
+motor1.set_speed(4)
+motor2.set_speed(11.25)
+#motor1.setBackward()
+#motor2.setBackward()
+motor1.stop()
+motor2.stop()
+
+while True:
+    try:
+        controller.turn_cw()
+        time.sleep(10)
+    except KeyboardInterrupt:
+        controller.stop()
+        controller.cleanup()
+        #motor1.stop()
+        #motor2.stop()
+        #GPIO.cleanup()
+"""
