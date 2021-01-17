@@ -163,7 +163,7 @@ class Recognizer(Thread):
             # Rhino variables
             rhino_library_path = pvrhino.LIBRARY_PATH,
             rhino_model_path = pvrhino.MODEL_PATH,
-            rhino_context_path = "resources/contexts/raspberry-pi/happyhelper_raspberry-pi_1_11_2021_v1.6.0_.rhn"
+            rhino_context_path = "resources/contexts/raspberry-pi/HappyHelper_raspberry-pi_2021-02-16-utc_v1_6_0"
             ):
 
         # Multithreading
