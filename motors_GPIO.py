@@ -49,18 +49,21 @@ class MotorController():
             motor.stop()
             
     def bit_right(self):
+        """Orients the robot a bit right, used by IR sensors to maintain line tracking"""
         self.Right.setBackward()
         time.sleep(0.3)
         self.Right.stop()
         return
     
     def bit_left(self):
+        """Orients the robot a bit left, used by IR sensors to maintain line tracking"""
         self.Left.setBackward()
         time.sleep(0.3)
         self.Left.stop()
         return
     
     def turn_ccw(self):
+        """Turns the robot 90 degrees counter-clockwise."""
         self.Left.setBackward()
         self.Right.setForward()
         time.sleep(3)
@@ -69,6 +72,7 @@ class MotorController():
         return
     
     def turn_cw(self):
+        """Turns the robot 90 degrees counter-clockwise."""
         self.Left.setForward()
         self.Right.setBackward()
         time.sleep(3)
@@ -79,6 +83,54 @@ class MotorController():
     def cleanup(self):
         """Cleans pin states and stops signals going to motors"""
         self.pi.cleanup()
+
+    def turn(self, cur_dir, des_dir):
+        """Orients the robot from current direction to desired direction."""
+        if cur_dir == "down":
+            if des_dir == "right":
+                self.turn_ccw()
+                return
+            elif des_dir == "up":
+                self.turn_cw()
+                self.turn_cw()
+                return
+            elif des_dir == "left":
+                self.turn_cw()
+                return
+        elif cur_dir == "right":
+            if des_dir == "down":
+                self.turn_cw()
+                return                
+            elif des_dir == "up":
+                self.turn_ccw()
+                return
+            elif des_dir == "left":
+                self.turn_cw()
+                self.turn_cw()
+                return
+        elif cur_dir == "up":
+            if des_dir == "down":
+                self.turn_cw()
+                self.turn_cw()
+                return
+            elif des_dir == "right":
+                self.turn_cw()
+                return
+            elif des_dir == "left":
+                self.turn_ccw()
+                return
+        elif cur_dir == "left":
+            if des_dir == "down":
+                self.turn_ccw()
+                return
+            elif des_dir == "right":
+                self.turn_cw()
+                self.turn_cw()
+                return
+            elif des_dir == "up":
+                self.turn_cw()
+                return
+
 
 class Stepper:
 
