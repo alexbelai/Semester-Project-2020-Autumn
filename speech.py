@@ -1,6 +1,7 @@
 import deepspeech
 import numpy as np
 import pyaudio
+from queue import Queue
 import time
 import webrtcvad
 import queue
@@ -162,7 +163,7 @@ class Recognizer(Thread):
             # Rhino variables
             rhino_library_path = pvrhino.LIBRARY_PATH,
             rhino_model_path = pvrhino.MODEL_PATH,
-            rhino_context_path = "resources/contexts/raspberry-pi/happyhelper_raspberry-pi_1_11_2021_v1.6.0_.rhn"
+            rhino_context_path = "resources/contexts/raspberry-pi/HappyHelper_en_raspberry-pi_2021-02-20-utc_v1_6_0.rhn"
             ):
 
         # Multithreading
@@ -407,4 +408,3 @@ class Recognizer(Thread):
             
             if pa is not None:
                 pa.terminate()
-            

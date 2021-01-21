@@ -24,12 +24,12 @@ class IRSensor():
 
 class IRController(Thread):
 
-    def __init__(self, pi, inpin1, inpin2):
+    def __init__(self, pi, queue, inpin1, inpin2):
 
         super(IRController, self).__init__()
         
         self.pi = pi
-        #self.queue = queue
+        self.queue = queue
         self.running = True
         self.sensor1 = IRSensor(pi, inpin1)
         self.sensor2 = IRSensor(pi, inpin2)
@@ -41,35 +41,35 @@ class IRController(Thread):
             data1 = self.sensor1.scan_line()
             data2 = self.sensor2.scan_line()
 
-            if data1 == False and data2 == False:
+            if data1 == True and data2 == True:
 
                 #Both sensors on line, go forward
                 #self.queue.put("f")
                 print("forward")
                     
-            elif data1 == False and data2 == True:
+            elif data1 == True and data2 == False:
                 #Turn left
-                #self.queue.put("l")
+                self.queue.put("l")
                 print("left")
 
-            elif data1 == True and data2 == False:
-                #self.queue.put("r")
+            elif data1 == False and data2 == True:
+                self.queue.put("r")
                 print("right")
                 
-            elif data1 == True and data2 == True:
+            elif data1 == False and data2 == False:
+                self.queue.put("b")
                 print("back")
             
-            sleep(1)
+            sleep(0.2)
 
-    
     def stop(self):
-        """Stops sensing and autocorrection"""
-        self.running = False
-        
-GPIO.setmode(GPIO.BOARD)
-GPIO.setwarnings(False)
-sensors = IRController(GPIO, 29, 31)
-sensors.start()
+            """Stops sensing and autocorrection"""
+            self.running = False
 
-while True:
-    sleep(1)
+#TESTING CODE
+#GPIO.setmode(GPIO.BOARD)
+#GPIO.setwarnings(False)
+#sensors = IRController(GPIO, 29, 31)
+#sensors.start()
+#while True:
+#   sleep(1)
